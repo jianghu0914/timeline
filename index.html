@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的时间轴记事本</title>
+    <style>
+        /* 基础样式重置与背景 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        /* 时间轴容器 */
+        .timeline-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            padding: 20px 0;
+        }
+
+        /* 时间轴中间的竖线 */
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            left: 120px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #4a90e2, #50e3c2);
+        }
+
+        /* 每一个时间轴项目 */
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            position: relative;            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 左侧时间 */
+        .timeline-time {
+            width: 100px;
+            text-align: right;
+            padding-right: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: 500;
+            padding-top: 10px;
+        }
+
+        /* 中间的方形节点 */
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            background-color: #fff;
+            border: 3px solid #4a90e2;
+            border-radius: 4px; /* 方形点 */
+            position: absolute;
+            left: 113px;
+            top: 12px;
+            z-index: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-dot:hover {
+            background-color: #4a90e2;
+            transform: scale(1.2);
+        }
+
+        /* 右侧内容卡片 */
+        .timeline-content {
+            margin-left: 50px;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .timeline-content:hover {
+            box-shadow: 0 8px 15px rgba(74, 144, 226, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .timeline-content h3 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .timeline-content p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 最多显示两行 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* 悬浮添加按钮 */
+        .fab-button {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4a90e2, #50e3c2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(74, 144, 226, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab-button:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* 弹窗样式 */
+        dialog {
+            border: none;            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        dialog h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        dialog input, dialog textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        dialog textarea {
+            height: 150px;
+            resize: vertical;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary {
+            background: #4a90e2;            color: white;
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #333;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        /* 详情弹窗的特殊样式 */
+        .detail-time {
+            color: #4a90e2;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-content {
+            white-space: pre-wrap; /* 保留换行符 */
+            line-height: 1.6;
+            color: #555;
+        }
+
+        /* 空状态提示 */
+        .empty-state {
+            text-align: center;
+            color: #bdc3c7;
+            margin-top: 50px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>⏳ 我的时间轴</h1>
+
+    <div class="timeline-container" id="timeline">
+        <!-- 时间轴内容会由JS动态生成 -->
+        <div class="empty-state" id="emptyState">还没有记录，点击右下角的 "+" 开始写下你的第一条时间轴吧！</div>
+    </div>
+
+    <!-- 悬浮添加按钮 -->
+    <button class="fab-button" id="addBtn">+</button>
+
+    <!-- 添加记录的弹窗 -->
+    <dialog id="addDialog">
+        <h2>✍️ 记录此刻</h2>
+        <input type="text" id="inputTitle" placeholder="给这段记忆起个标题（选填）">        <textarea id="inputContent" placeholder="随便写点什么..."></textarea>
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="document.getElementById('addDialog').close()">取消</button>
+            <button class="btn btn-primary" onclick="saveNote()">保存</button>
+        </div>
+    </dialog>
+
+    <!-- 查看详情的弹窗 -->
+    <dialog id="detailDialog">
+        <h2 id="detailTitle"></h2>
+        <div class="detail-time" id="detailTime"></div>
+        <div class="detail-content" id="detailContent"></div>
+        <div class="btn-group" style="margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('detailDialog').close()">关闭</button>
+        </div>
+    </dialog>
+
+    <script>
+        // 数据存储在浏览器的 LocalStorage 中
+        const STORAGE_KEY = 'timeline_notes_data';
+
+        // 获取笔记数据
+        function getNotes() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        // 保存笔记数据
+        function saveNotes(notes) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+        }
+
+        // 格式化时间
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${y}-${m}-${d} <br> ${h}:${min}`;
+        }
+
+        // 渲染时间轴
+        function renderTimeline() {
+            const notes = getNotes();
+            const container = document.getElementById('timeline');
+            const emptyState = document.getElementById('emptyState');
+            
+            // 清空现有内容（保留空状态提示）
+            container.innerHTML = '';            container.appendChild(emptyState);
+
+            if (notes.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            // 按时间倒序排列（最新的在最上面）
+            notes.sort((a, b) => b.time - a.time);
+
+            notes.forEach(note => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                // 如果没有标题，截取内容前15个字作为标题
+                const displayTitle = note.title || (note.content.substring(0, 15) + (note.content.length > 15 ? '...' : ''));
+
+                item.innerHTML = `
+                    <div class="timeline-time">${formatTime(note.time)}</div>
+                    <div class="timeline-dot" data-id="${note.id}"></div>
+                    <div class="timeline-content" data-id="${note.id}">
+                        <h3>${displayTitle}</h3>
+                        <p>${note.content.replace(/\n/g, ' ')}</p>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+
+            // 绑定点击事件
+            bindClickEvents();
+        }
+
+        // 绑定点击事件查看详情
+        function bindClickEvents() {
+            document.querySelectorAll('.timeline-dot, .timeline-content').forEach(el => {
+                el.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    showDetail(id);
+                });
+            });
+        }
+
+        // 显示详情
+        function showDetail(id) {
+            const notes = getNotes();
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+            document.getElementById('detailTitle').innerText = note.title || '无标题';
+            document.getElementById('detailTime').innerHTML = '🕒 ' + formatTime(note.time).replace('<br>', ' ');
+            document.getElementById('detailContent').innerText = note.content;
+            
+            document.getElementById('detailDialog').showModal();
+        }
+
+        // 保存新笔记
+        function saveNote() {
+            const title = document.getElementById('inputTitle').value.trim();
+            const content = document.getElementById('inputContent').value.trim();
+
+            if (!content) {
+                alert('内容不能为空哦！');
+                return;
+            }
+
+            const notes = getNotes();
+            const newNote = {
+                id: Date.now(),
+                time: Date.now(),
+                title: title,
+                content: content
+            };
+
+            notes.push(newNote);
+            saveNotes(notes);
+            renderTimeline();
+
+            // 关闭弹窗并清空输入
+            document.getElementById('addDialog').close();
+            document.getElementById('inputTitle').value = '';
+            document.getElementById('inputContent').value = '';
+        }
+
+        // 初始化事件
+        document.getElementById('addBtn').addEventListener('click', () => {
+            document.getElementById('addDialog').showModal();
+        });
+
+        // 页面加载时渲染
+        renderTimeline();
+    </script>
+</body>
+</html>
